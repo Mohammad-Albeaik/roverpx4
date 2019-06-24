@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # ROS python API
 import rospy
 # Joy message structure
@@ -26,23 +27,20 @@ RcOver 					= OverrideRCIn()
 RcOver.channels = [1500,1500,1500,1500,0,0,0,0]
 sum_error_v 		= 0
 sum_error_w 		= 0
-kv 							= 30				# Path planning - Lyapunov controller
-kw 							= 6				# Path planning - Lyapunov controller
-kvp 							= 60				# Speed PID controller
-kvd 							= 5 				# Speed PID controller
-kvi 						        = 0.5 				# Speed PID controller
-kwp                      				= 90
-kwd							= 10# 0.5
-kwi							= 1
+kv 							= 10				# Path planning - Lyapunov controller
+kw 							= 30				# Path planning - Lyapunov controller
+kvp 							= 120				# Speed PID controller
+kvd 							= 0 				# Speed PID controller
+kvi 							= 0 				# Speed PID controller
+kwp                      				= 10
+kwd							= 0
+kwi							= 0
 dv_Pre 					= 0
 dw_Pre 					= 0
 omega 					= 0
 vel 						= 0
-right						= 0
-left 						= 0
-imV 						= 0
-WR 						= 0
-WL 						= 0
+
+
 
 def posCb(msg):
     global x, y, z, roll, pitch, yaw
@@ -56,9 +54,9 @@ def posCb(msg):
 def velCb(velo):
     global vx,vy,vz, vel
 
-    vx = velo.linear.x
-    vy = velo.linear.y
-    vz = velo.linear.z
+    vx = velo.twist.linear.x
+    vy = velo.twist.linear.y
+    vz = velo.twist.linear.z
     vel = sqrt(vx*vx + vy*vy + vz*vz)
 
 def angCb(angu):
@@ -68,7 +66,7 @@ def angCb(angu):
 
 
 def UpdateSpeed():
-    global kv, kw, v, w , velocity, yaw, x ,y, sum_error_w, sum_error_v, kvp, kvi, kvd,kwp, kwd, kwi, dv_Pre, dw_Pre, omega, vel, right, left, imV, WR, WL
+    global kv, kw, v, w , velocity, yaw, x ,y, sum_error_w, sum_error_v, kvp, kvi, kvd,kwp, kwd, kwi, dv_Pre, dw_Pre, omega, vel
 
 
     xg = 0
@@ -88,10 +86,10 @@ def UpdateSpeed():
         v = 0.9
     if v < -0.9:
         v = -0.9
-    if w > 2.55:
-        w = 2.55
-    if w < -2.55:
-       w = -2.55
+    if w > 2.25:
+        w = 2.25
+    if w < -2.25:
+        w = -2.25
 
 
 
@@ -105,13 +103,13 @@ def UpdateSpeed():
 
 #------------------------------------------------------------------------- Debug -------------------------------------------------------------------------
 
-   # print("x",x)
-   # print("y",y)
+    #print("x",x)
+    #print("y",y)
     #print("yaw",yaw)
     #print("actual",actual)
     #print("alpha",alpha)
-   # print("v  ",v)
-   # print("w  ",w)
+    #print("v  ",v)
+    #print("w  ",w)
     #print("wr  ",wr)
     #print("wl  ",wl)
 
@@ -120,24 +118,10 @@ def UpdateSpeed():
     r = 0.13 # radius 13 cm
     L = 0.33 # length between wheels 33 cm
 
-    # need to find velocity out of the speed and previous WR and WL 
-    if WR>1594:
-       right = WR - 1595
-    elif WR <1406:
-       right = WR - 1405
-    if WL>1594:
-       left = WL - 1595
-    elif WL <1406:
-       left = WL - 1405
-    imV = (right + left)*r/2
-    if imV>0:       # this means PWMs were above 1500... robot moving backward
-       vel = - abs(vel)
-    elif imV<0:     # this means PWMs were bellow 1500... robot moving forward 
-       vel = abs( vel)
-    # from desired linear and angular  velocities
-  #  v = 0.0
-  #  w = 2.0
 
+    # from desired linear and angular  velocities
+    v = 0.8
+    w = 0
 
     dv = v - vel
     dw = w - omega
@@ -145,26 +129,22 @@ def UpdateSpeed():
     sum_error_v = sum_error_v + dv
     sum_error_w = sum_error_w + dw
 
-    if sum_error_v > 500:
-        sum_error_v = 500
-    elif sum_error_v < -500:
-        sum_error_v = -500
-    if sum_error_w > 500:
-        sum_error_w = 500
-    elif sum_error_w < -500:
-        sum_error_w = -500
+    if sum_error_v > 100:
+        sum_error_v = 100
+    elif sum_error_v < -100:
+        sum_error_v = -100
+    if sum_error_w > 100:
+        sum_error_w = 100
+    elif sum_error_w < -100:
+        sum_error_w = -100
 
     error_v = - (kvp * dv + kvd * (dv - dv_Pre) + kvi * sum_error_v) # PWM signal for the right wheel
     error_w = - (kwp * dw + kwd * (dw - dw_Pre) + kwi * sum_error_w)  # PWM signal for the left wheel
 
-    if error_v > 45 :
-       error_v = 45
-    elif error_v < -45:
-       error_v = -45
-    if error_w > 100:
-       error_w = 100
-    elif error_w <-100:
-       error_w = -100
+#    if error_v > 0 :
+#       error_v = error_v + 1580
+#    else:
+#       error_v = error_v + 1420
 
     dv_Pre = dv
     dw_Pre = dw
@@ -174,22 +154,22 @@ def UpdateSpeed():
     WR =  error_v/r + L/r * error_w
     WL =  2 * error_v/r - WR
 
-   # WR = WR + 1500
-   # WL = WL + 1500
+    WR = WR + 1500
+    WL = WL + 1500
 
-    if WR > 0:
-        WR = WR + 1595
-    elif WR < 0:
-        WR = WR +1405
-    if WL > 0:
-        WL = WL + 1595
-    elif WL < 0:
-        WL = WL + 1405
+    if WR > 2100:
+        WR = 2100
+    elif WR < 900:
+        WR = 900
+    if WL > 2100:
+        WL = 2100
+    elif WL < 900:
+        WL = 900
 
     RcOver.channels = [1500,WR,1500,WL,0,0,0,0]   # 4th
 
-    print("yaw ",yaw)
-    #print("desired w ",w)
+    print("speed v",vel)
+    print("rotation w",omega)
     print("dv error ",dv)
     print("dw error ",dw)
     print("actual w ",omega)
@@ -208,13 +188,13 @@ def main():
     rospy.init_node('Roveer_CU', anonymous=True)
 
     # ROS loop rate, [Hz]
-    rate = rospy.Rate(80.0)
+    rate = rospy.Rate(150.0)
 
     # Subscribe to Rover's local position
     rospy.Subscriber('vrpn_client_node/mmb/pose', PoseStamped, posCb)
 
     # Subscribe to Rover's local linear velocity
-    rospy.Subscriber('velocity', Twist, velCb)
+    rospy.Subscriber('mavros/local_position/velocity_local', TwistStamped, velCb)
         # Subscribe to Rover's local angular velocity
     rospy.Subscriber('mavros/local_position/velocity_body', TwistStamped, angCb)
 

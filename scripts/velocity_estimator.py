@@ -116,8 +116,8 @@ def UpdateVelocity():
     secondsold	= seconds
     micro_secold = micro_sec
 
-    #print("speed ",sqrt(velocity.linear.x *velocity.linear.x + velocity.linear.y*velocity.linear.y))
-    #print(velocity)
+#    print("speed ",sqrt(velocity.linear.x *velocity.linear.x + velocity.linear.y*velocity.linear.y))
+   # print(velocity)
 
 # Main function
 def main():
