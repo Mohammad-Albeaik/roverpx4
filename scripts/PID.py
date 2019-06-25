@@ -12,14 +12,15 @@ from tf.transformations import euler_from_quaternion
 from numpy import array
 from std_msgs.msg import String
 from mavros_msgs.msg import OverrideRCIn
+from sensor_msgs.msg import Joy
 
 
-x         			= 0.0 
+x         			= 0.0
 y         			= 0.0
 z         			= 0.0
 local_ang 			= [0.0, 0.0, 0.0, 0.0]
 roll      			= 0.0
-pitch     			= 0.0 
+pitch     			= 0.0
 yaw       			= 0.0
 velocity 				= Twist()
 RcOver 					= OverrideRCIn()
@@ -27,14 +28,17 @@ RcOver.channels = [1500,1500,1500,1500,0,0,0,0]
 sum_error_rho 		= 0
 sum_error_alpha 		= 0
 kvp 							= 20				## Speed PID controller
-kvd                             = 3                 # Speed PID controller
-kvi                             = 2                 # Speed PID controller
+kvd                             = 2                 # Speed PID controller
+kvi                             = 0.05                 # Speed PID controller
 kwp 							= 50				# Speed PID controller
-kwd 							= 3					# Speed PID controller
-kwi 							= 2 				# Speed PID controller
+kwd 							= 2					# Speed PID controller
+kwi 							= 0.05 				# Speed PID controller
 old_rho 					    = 0
 old_alpha 					    = 0
-
+joy_msg   					= Joy()
+joy_msg.axes 					= [0.0,0.0,0.0]
+xg 						= 0
+yg 						= 0
 
 
 def posCb(msg):
@@ -49,13 +53,13 @@ def posCb(msg):
 
 
 def UpdateSpeed():
-    global v, w , velocity, yaw, x ,y, sum_error_rho, sum_error_alpha, kvp, kwp, kvd, kwd, kvi, kwi, old_rho, old_alpha,
+    global v, w , velocity, yaw, x ,y, sum_error_rho, sum_error_alpha, kvp, kwp, kvd, kwd, kvi, kwi, old_rho, old_alpha, xg, yg
 
 #------------------------------------------------------------------------- PID Start ----------------------------------------------------------------------
 
-    xg = 0
-    yg = 0
-    dx = xg - x 
+    #xg = 1
+    #yg = 2
+    dx = xg - x
     dy = yg - y
 
     rho = sqrt(dx*dx + dy*dy)
@@ -65,22 +69,22 @@ def UpdateSpeed():
         rho = rho
     else:
         rho = - rho
-   
+
 
     sum_error_rho = sum_error_rho + rho
     sum_error_alpha = sum_error_alpha + alpha
-    
+
     v =  kvp * rho   + kvd * (abs(rho) - abs(old_rho)) + kvi * sum_error_rho
     w =  kwp * alpha + kwd * (abs(alpha) - abs(old_alpha)) + kwi * sum_error_alpha
 
-    if sum_error_rho > 100:
-        sum_error_rho = 100
-    elif sum_error_rho < -100:
-        sum_error_rho = -100
-    if sum_error_alpha > 100:
-        sum_error_alpha = 100
-    elif sum_error_alpha < -100:
-        sum_error_alpha = -100
+    if sum_error_rho > 10:
+        sum_error_rho = 10
+    elif sum_error_rho < -10:
+        sum_error_rho = -10
+    if sum_error_alpha > 10:
+        sum_error_alpha = 10
+    elif sum_error_alpha < -10:
+        sum_error_alpha = -10
 
     if v > 30:
         v = 30
@@ -95,7 +99,7 @@ def UpdateSpeed():
     old_alpha   = alpha
 
 
-    if rho < 0.05: 		# 5 cm away from the final destination 
+    if abs( rho) < 0.1: 		# 5 cm away from the final destination 
         v = 0
         w = 0
 
@@ -107,44 +111,48 @@ def UpdateSpeed():
     L = 0.33 # length between wheels 33 cm
 
 
-    WR =   v/r +L/r * w 
-    WL =   2* v/r - w
+    WR =   v/r +L/r * w
+    WL =   2* v/r - WR
 
     if WR > 0:
         WR = - WR + 1405
-    else:
+    elif WR <0:
         WR = - WR +1595
+    else:
+        WR = 1500
     if WL > 0:
         WL = - WL + 1405
-    else:
+    elif WL < 0:
         WL = - WL +1595
-
+    else:
+        WL = 1500
 
 
     RcOver.channels = [1500,WR,1500,WL,0,0,0,0]   # 4th
-   
+
 
 	#------------------------------------------------------------------------- Debug -------------------------------------------------------------------------
 
-    #print("x",x)
-    #print("y",y)
-    #print("yaw",yaw)
-    #print("actual",actual)
+    print("x",x)
+    print("y",y)
+    print("yaw",yaw)
     #print("alpha",alpha)
     #print("v  ",v)
     #print("w  ",w)
-    #print("wr  ",wr)
-    #print("wl  ",wl)
-    print("error_R",error_R)
-    print("error_L",error_L)
+    print("WR  ",WR)
+    print("WL  ",WL)
     print("v ",v)
-    print("actual v ",vel)
     print("w ",w)
-    print("actual w ",omega)
     #print("sum_error_L ",sum_error_L)
     #print("sum_error_R ",sum_error_R)
     print("-------------------------------------------------")
 #------------------------------------------------------------------------- Debug end-------------------------------------------------------------------------
+
+def joyCB(msg):
+	global xg,yg
+	xg = msg.axes[1]*2.5
+	yg = msg.axes[0]*2.5
+
 
 def StopBeforeKilling():
     for i in range(1,120):
@@ -160,11 +168,13 @@ def main():
     rospy.init_node('Roveer_CU', anonymous=True)
 
     # ROS loop rate, [Hz]
-    rate = rospy.Rate(60.0) 
+    rate = rospy.Rate(60.0)
 
-       
     # Subscribe to Rover's local position
     rospy.Subscriber('vrpn_client_node/mmb/pose', PoseStamped, posCb)
+
+    # Subscribe to joystick topic
+    rospy.Subscriber('joy',Joy,joyCB)
 
     # Speed publisher
     speed_pub = rospy.Publisher('velocity_cm',Twist, queue_size=1)   # change to velocity_cm
