@@ -1,0 +1,4 @@
+ <launch>
+        <node pkg="mypackage" type="pathfollowing.py" name="Roveer_CU"  required="true" output="screen">
+        </node>
+</launch>
