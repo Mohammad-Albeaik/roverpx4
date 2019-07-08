@@ -27,12 +27,12 @@ RcOver 					= OverrideRCIn()
 RcOver.channels = [1500,1500,1500,1500,0,0,0,0]
 sum_error_rho 		= 0
 sum_error_alpha 		= 0
-kvp 							= 50				## Speed PID controller
+kvp 							= 20				## Speed PID controller
 kvd                             = 2                 # Speed PID controller
 kvi                             = 0.05                 # Speed PID controller
-kwp 							= 70				# Speed PID controller
+kwp 							= 50				# Speed PID controller
 kwd 							= 30					# Speed PID controller
-kwi 							=0#0.05 				# Speed PID controller
+kwi 							=0.05 				# Speed PID controller
 old_rho 					    = 0
 old_alpha 					    = 0
 joy_msg   					= Joy()
@@ -41,7 +41,7 @@ xg 						= 0
 yg 						= 0
 increasing 					= 1
 phase 						= 1
-t 						= 0
+
 def posCb(msg):
     global x, y, z, roll, pitch, yaw
     x = msg.pose.position.x
@@ -54,14 +54,11 @@ def posCb(msg):
 
 
 def UpdateSpeed():
-    global v, w , velocity, yaw, x ,y, sum_error_rho, sum_error_alpha, kvp, kwp, kvd, kwd, kvi, kwi, old_rho, old_alpha, xg, yg, increasing, phase, t
+    global v, w , velocity, yaw, x ,y, sum_error_rho, sum_error_alpha, kvp, kwp, kvd, kwd, kvi, kwi, old_rho, old_alpha, xg, yg, increasing, phase
 
 
-
-    if old_rho<0.25:
-       t = t + 0.1
-    xg = 1 + sin(2*t)
-    yg = 1 - cos(t)
+    xg = -2
+    yg = 2
 
 #------------------------------------------------- Distance & linear velocity control ----------------------------------------------------------------
 
@@ -88,21 +85,46 @@ def UpdateSpeed():
     old_rho     = rho
 
 #----------------------------------------------------- Orientation control (path following)--------------------------------------------------------------
-   # dx = 0.2;
+    dx =- 1;
    # y2 = 0.75*(x+dx)*(x+dx)-2;
     #y2 = 1.247940049224623*(x+dx)*(x+dx) + 0.22115280607922758*(x+dx) - 2.413580532969162
-    #y2 = 2
-    #dy = y2 - y;
+    y2 = 2
+    dy = y2 - y;
+#    if increasing:
+ #      if x<1.9 and y <- 1.5:
+ #         dx = 0.1
+ #         y2 = -2
+ #         dy = y2 - y
+ #         phase = 1
+ #      elif y < 1.9 and x > 1.5:
+ #         dy = 0.1
+ #         x2 = 2
+ #         dx = x2 - x
+ #         phase = 2
+ #      else:
+ #         increasing = 0
+ #   else:
+ #      if x > -1.9 and y >1.5:
+ #         dx = -0.1
+ #         y2 = 2
+ #         dy = y2 - y
+ #         phase = 3
+ #      elif y > -1.9 and x < - 1.5:
+ #         dy = - 0.1
+  #        x2 = -2
+  #        dx = x2 - x
+  #        phase = 4
+  #     else:
+  #        increasing = 1
+    if phase ==3:
+       if yaw <0:
+          yaw = - yaw - pi
+       else:
+          yaw = - yaw + pi
+    else:
+      theta = atan2(dy,dx)
 
-    angle = atan2(dy,dx)
-
-    alpha = angle - yaw
-
-    if alpha > 5:
-       alpha = alpha - 2*pi
-    elif alpha < -5:
-       alpha = alpha + 2*pi
-   # alpha = (atan2(dy,dx)) - yaw
+    alpha = theta - yaw
 
     # if (alpha < pi/2) and (alpha > -pi/2):
     #     rho = rho
@@ -162,17 +184,17 @@ def UpdateSpeed():
    # print("X",x,"Y",y)
     #print("x",x)
    # print("y",y)
-  #  print("yaw",yaw)
-  #  print("alpha",alpha)
-   # print("desired orientation  ",atan2(dy,dx))
-   # print("phase  ",phase)
-    print(x,y)
+    print("yaw",yaw)
+    print("alpha",alpha)
+    print("desired orientation  ",atan2(dy,dx))
+    print("phase  ",phase)
+    print("increasing  ",increasing)
    # print("WL  ",WL)
    # print("v ",v)
    # print("w ",w)
-   # print("distance ",sqrt(dx*dx +dy*dy))
+    #print("sum_error_L ",sum_error_L)
     #print("sum_error_R ",sum_error_R)
-    #print("-------------------------------------------------")
+    print("-------------------------------------------------")
 #------------------------------------------------------------------------- Debug end-------------------------------------------------------------------------
 
 def joyCB(msg):
@@ -195,7 +217,7 @@ def main():
     rospy.init_node('Roveer_CU', anonymous=True)
 
     # ROS loop rate, [Hz]
-    rate = rospy.Rate(90.0)
+    rate = rospy.Rate(10000.0)
 
     # Subscribe to Rover's local position
     rospy.Subscriber('vrpn_client_node/mmb/pose', PoseStamped, posCb)
