@@ -1,4 +1,11 @@
 <launch>
+		<arg name="mocap_server" default="to  be filled by the user" />
+
+		<include file="$(find vrpn_client_ros)/launch/sample.launch" >
+			<arg name="server" default="$(arg mocap_server)" />
+		</include>
+
+
 	<group ns="rover1">
 
 		<arg name="fcu_url" default="/dev/ttyUSB0:921600" />
@@ -6,8 +13,6 @@
 		<arg name="tgt_system" default="1" />
 		<arg name="tgt_component" default="1" />
 		<arg name="log_output" default="screen" />
-
-		<arg name="mocap_server" default="to  be filled by the user" />
 
 		<arg name="rbname" default="mmb" />
 
@@ -22,11 +27,7 @@
 			<arg name="log_output" value="$(arg log_output)" />
 		</include>
 
-		<include file="$(find vrpn_client_ros)/launch/sample.launch" >
-			<arg name="server" default="$(arg mocap_server)" />
-		</include>
-
-		<node pkg="topic_tools" type="relay" name="mocap_topic_relay" args="/vrpn_client_node/$(arg rbname)/pose /mavros/vision_pose/pose" />
+		<node pkg="topic_tools" type="relay" name="mocap_topic_relay" args="/vrpn_client_node/$(arg rbname)/pose /rover1/mavros/vision_pose/pose" />
 	</group>
 
 
