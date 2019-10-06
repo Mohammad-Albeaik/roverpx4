@@ -57,13 +57,17 @@ def UpdateSpeed():
 
 #------------------------------------------------------------------------- PID Start ----------------------------------------------------------------------
 
-    #xg = 1
-    #yg = 2
     dx = xg - x
     dy = yg - y
 
     rho = sqrt(dx*dx + dy*dy)
     alpha = (atan2(dy,dx)) - yaw
+
+    if alpha > pi:
+       alpha = alpha - 2*pi
+    elif alpha < -pi:
+       alpha = alpha + 2*pi
+       
 
     if (alpha < pi/2) and (alpha > -pi/2):
         rho = rho
@@ -104,8 +108,7 @@ def UpdateSpeed():
         w = 0
 
 
-    velocity.linear.x = v
-    velocity.angular.z = w
+    
 #------------------------------------------------------------------------- PID end-------------------------------------------------------------------------
     r = 0.13 # radius 13 cm
     L = 0.33 # length between wheels 33 cm
@@ -131,35 +134,12 @@ def UpdateSpeed():
     RcOver.channels = [1500,WR,1500,WL,0,0,0,0]   # 4th
 
 
-	#------------------------------------------------------------------------- Debug -------------------------------------------------------------------------
-
-    print("x",x)
-    print("y",y)
-    print("yaw",yaw)
-    #print("alpha",alpha)
-    #print("v  ",v)
-    #print("w  ",w)
-    print("WR  ",WR)
-    print("WL  ",WL)
-    print("v ",v)
-    print("w ",w)
-    #print("sum_error_L ",sum_error_L)
-    #print("sum_error_R ",sum_error_R)
-    print("-------------------------------------------------")
-#------------------------------------------------------------------------- Debug end-------------------------------------------------------------------------
-
 def joyCB(msg):
 	global xg,yg
 	xg = msg.axes[1]*2.5
 	yg = msg.axes[0]*2.5
 
 
-def StopBeforeKilling():
-    for i in range(1,120):
-        # Stop the rover before killiing the node. 
-        RcOver.channels = [1500,1500,1500,1500,0,0,0,0]   
-        rc_pub.publish(RcOver)
-        rate.sleep()
 
 # Main function
 def main():
@@ -176,9 +156,6 @@ def main():
     # Subscribe to joystick topic
     rospy.Subscriber('joy',Joy,joyCB)
 
-    # Speed publisher
-    speed_pub = rospy.Publisher('velocity_cm',Twist, queue_size=1)   # change to velocity_cm
-
     # RCOveride publisher
     rc_pub = rospy.Publisher('mavros/rc/override',OverrideRCIn, queue_size=1)
 
@@ -187,12 +164,9 @@ def main():
     while not rospy.is_shutdown():
 
             UpdateSpeed()
-            speed_pub.publish(velocity)
             rc_pub.publish(RcOver)
             rate.sleep()
 
-    # Stop the rover before killiing the node. 
-    StopBeforeKilling()
 
 if __name__ == '__main__':
     try:

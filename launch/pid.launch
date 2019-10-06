@@ -1,4 +1,12 @@
  <launch>
+
+	     <arg name="joy_dev" default="/dev/input/js0"/>
+
+	    <!-- Joystick node -->
+	    <node pkg="joy" type="joy_node" name="joy_node"  required="true" output="screen">
+	        <param name="dev" type="string" value="$(arg joy_dev)" />        
+	    </node>
+    
         <node pkg="mypackage" type="PID.py" name="Roveer_CU"  required="true" output="screen">
         </node>
 </launch>

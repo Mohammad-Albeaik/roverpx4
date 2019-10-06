@@ -56,31 +56,18 @@ def UpdateVelocity():
     micro_sec 	= now.nsecs/1000
     dT  	 	= (seconds - secondsold)*1000000 + (micro_sec - micro_secold)      # time in seconds
 
+    dyaw        = yaw - yawold;
+    if dyaw > pi:
+        dyaw = dyaw - 2*pi
+    elif dyaw <-pi:
+        dyaw = dyaw + 2*pi
+
+
     xspeed 		= ((x - xold)/(dT))*1000000 			# m/s
     yspeed 		= ((y - yold)/dT)*1000000      # m/s
-    yawspeed 	= ((yaw - yawold)/dT)*1000000  # rad/s
+    yawspeed 	= (dyaw/dT)*1000000  # rad/s
 
-    dT = 20000
-    threshhold 	= 4
-    if yawspeed < - threshhold:
-    	#print('too small ',yawspeed)
-    	#print('old yaw ',yawold)
-    	#print('yaw ',yaw)
-    	#print('xspeed ',xspeed)
-    	yawspeed 	= ((2*pi + yaw - yawold)/dT)*1000000  # rad/s
-    	#print('omega ',yawspeed)
-    	#print('dT ',dT)
-    	#print('--------------------')
-
-    if yawspeed > threshhold:
-    	#print('too large ',yawspeed)
-    	#print('old yaw ',yawold)
-    	#print('yaw ',yaw)
-    	yawspeed 	= ((-2*pi + yaw - yawold)/dT)*1000000  # rad/s
-    	#print('omega ',yawspeed)
-    	#print('dT ',dT)
-    	#print('xspeed ',xspeed)
-    	#print('--------------------')
+    
 
 #------------------------------------------------------------------------- filter -------------------------------------------------------------------------
     x_dot_memory[0] = x_dot_memory[1];
