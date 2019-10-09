@@ -1,0 +1,10 @@
+<launch>
+    
+        <node pkg="mypackage" type="velocity_estimator.py" name="velocity_estimator"  required="true" output="screen">
+        </node>
+
+        <node pkg="mypackage" type="velocityController.py" name="Roveer_sp"  required="true" output="screen">
+        </node>
+
+</launch>
+
