@@ -12,50 +12,52 @@ from tf.transformations import euler_from_quaternion
 from numpy import array
 from std_msgs.msg import String
 from mavros_msgs.msg import OverrideRCIn
-
-
-xdot         			= 0.0
-ydot         			= 0.0
-yawdot       			= 0.0
+import time
 
 RcOver 					= OverrideRCIn()
 RcOver.channels = [1500,1500,1500,1500,0,0,0,0]
 sum_error_v 		= 0
 sum_error_w 		= 0
 
-kvp 							= 20				## Speed PID controller
-kvd                             = 2                 # Speed PID controller
-kvi                             = 0.05                 # Speed PID controller
-kwp 							= 50				# Speed PID controller
-kwd 							= 2					# Speed PID controller
-kwi 							= 0.05 				# Speed PID controller
+vg          = 0
+wg          = 0
+v           = 0
+w           = 0
 
-old_v 					    = 0
-old_w 					    = 0
+kvp         = 0.3	#P for linear
+kvd         = 0.02     #D for linear
+kvi         = 0.001  #I for linear
+kwp         = 0.4	#P for angular
+kwd         = 0.02		#D for angular
+kwi         = 0.001 	#I for angular
 
-vg 						= 0
-wg 						= 0
+old_v       = 0
+old_w       = 0
+vi = 0
+wi = 0
 
-
+#xdot                   = 0.0
+#ydot                   = 0.0
+#yawdot                 = 0.0
 
 
 def spCb(msg):
-    global xdot, ydot, yawdot,v,w
-    xdot = msg.linear.x
-    ydot = msg.linear.y
-    yawdot = msg.angular.z
+    global v,w
+    xdot    = msg.linear.x
+    ydot    = msg.linear.y
+    forward = msg.linear.z
+    yawdot  = msg.angular.z
 
     w = yawdot
-    v = sqrt(xdot*xdot+ydot*ydot)
+    v = forward*sqrt(xdot*xdot+ydot*ydot)
 
 
 
 def UpdateSpeed():
-    global v, w , sum_error_v, sum_error_w, kvp, kwp, kvd, kwd, kvi, kwi, old_v, old_w, vg, wg
+    global v, w , sum_error_v, sum_error_w, kvp, kwp, kvd, kwd, kvi, kwi, old_v, old_w, vg, wg,vi,wi,T0
 
 #------------------------------------------------------------------------- PID Start ----------------------------------------------------------------------
-    vg = 0
-    wg = 0
+
 
     dv = vg - v
     dw = wg - w
@@ -64,8 +66,8 @@ def UpdateSpeed():
     sum_error_v = sum_error_v + v
     sum_error_w = sum_error_w + w
 
-    vi =  kvp * v   + kvd * (abs(v) - abs(old_v)) + kvi * sum_error_v
-    wi =  kwp * w + kwd * (abs(w) - abs(old_w)) + kwi * sum_error_w
+    vi = vi + (kvp * v + kvd * old_v + kvi * sum_error_v)
+    wi = wi + (kwp * w + kwd * old_w + kwi * sum_error_w)
 
     if sum_error_v > 10:
         sum_error_v = 10
@@ -94,7 +96,7 @@ def UpdateSpeed():
 
     
 #------------------------------------------------------------------------- PID end-------------------------------------------------------------------------
-    r = 0.13 # radius 13 cm
+    r = 0.065 # radius 13 cm
     L = 0.33 # length between wheels 33 cm
 
 
@@ -123,12 +125,15 @@ def UpdateSpeed():
 
 # Main function
 def main():
+    global T0
+
+    time.sleep(2.5)
 
     # Initiate node
     rospy.init_node('Roveer_sp', anonymous=True)
 
     # ROS loop rate, [Hz]
-    rate = rospy.Rate(60.0)
+    rate = rospy.Rate(40.0)
 
     # Subscribe to Rover's local position
     rospy.Subscriber('velocity',Twist, spCb)
@@ -137,7 +142,7 @@ def main():
     # RCOveride publisher
     rc_pub = rospy.Publisher('mavros/rc/override',OverrideRCIn, queue_size=1)
 
-
+    T0 = time.time()
     # ROS main loop
     while not rospy.is_shutdown():
 

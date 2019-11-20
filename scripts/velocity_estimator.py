@@ -27,14 +27,16 @@ yold 		= 0
 yawold 	= 0
 secondsold = 0
 micro_secold = 0
-b 													= [0.0095,    0.0191,    0.0095]
-a 													= [1.0000,   -1.7056,    0.7437]
-x_dot_memory 								= [0.00,    0.00,    0.00]
-filtered_x_dot_memory 			= [0.00,    0.00,    0.00]
-y_dot_memory 								= [0.00,    0.00,    0.00]
-filtered_y_dot_memory 			= [0.00,    0.00,    0.00]
-yaw_dot_memory 							= [0.00,    0.00,    0.00]
-filtered_yaw_dot_memory 		= [0.00,    0.00,    0.00]
+b 							= [0.0095,    0.0191,    0.0095]
+a 							= [1.0000,   -1.7056,    0.7437]
+by                          = [0.0009, 0.0019, 0.0009]
+ay                          = [1,-1.9112, 0.915]
+x_dot_memory 				= [0.00,    0.00,    0.00]
+filtered_x_dot_memory 		= [0.00,    0.00,    0.00]
+y_dot_memory 				= [0.00,    0.00,    0.00]
+filtered_y_dot_memory 		= [0.00,    0.00,    0.00]
+yaw_dot_memory 				= [0.00,    0.00,    0.00]
+filtered_yaw_dot_memory 	= [0.00,    0.00,    0.00]
 
 def posCb(msg):
     global x, y, z, roll, pitch, yaw
@@ -49,7 +51,7 @@ def posCb(msg):
 
 
 def UpdateVelocity():
-    global velocity, yaw, x, y, FirstTime, xold, yold, yawold,secondsold,micro_secold, a,b, x_dot_memory, y_dot_memory, yaw_dot_memory, filtered_x_dot_memory, filtered_y_dot_memory, filtered_yaw_dot_memory
+    global velocity, yaw, x, y, FirstTime, xold, yold, yawold,secondsold,micro_secold, a,b, x_dot_memory, y_dot_memory, yaw_dot_memory, filtered_x_dot_memory, filtered_y_dot_memory, filtered_yaw_dot_memory,ay,by
 
     now = rospy.get_rostime()
     seconds 	= now.secs
@@ -89,13 +91,17 @@ def UpdateVelocity():
     yaw_dot_memory[2] = yawspeed;
     filtered_yaw_dot_memory[0] = filtered_yaw_dot_memory[1];
     filtered_yaw_dot_memory[1] = filtered_yaw_dot_memory[2];
-    filtered_yaw_dot_memory[2] = (float) ( (b[0]*yaw_dot_memory[2] + b[1]*yaw_dot_memory[1] + b[2]*yaw_dot_memory[0] - a[1]*filtered_yaw_dot_memory[1] - a[2]*filtered_yaw_dot_memory[0]));
+    filtered_yaw_dot_memory[2] = (float) ( (by[0]*yaw_dot_memory[2] + by[1]*yaw_dot_memory[1] + by[2]*yaw_dot_memory[0] - ay[1]*filtered_yaw_dot_memory[1] - ay[2]*filtered_yaw_dot_memory[0]));
 #-------------------------------------------------------------------------filter end-------------------------------------------------------------------------
+    xfdot = cos(yaw)*velocity.linear.x + sin(yaw)*velocity.linear.y
+    if xfdot >0:
+       velocity.linear.z = 1
+    else:
+       velocity.linear.z = -1
 
-
-    velocity.linear.x = filtered_x_dot_memory[2]
-    velocity.linear.y = filtered_y_dot_memory[2]
-    velocity.angular.z = filtered_yaw_dot_memory[2]
+    velocity.linear.x = round(filtered_x_dot_memory[2],4)
+    velocity.linear.y = round(filtered_y_dot_memory[2],4)
+    velocity.angular.z = round(filtered_yaw_dot_memory[2],4)
 		
     xold 		= x
     yold 		= y
