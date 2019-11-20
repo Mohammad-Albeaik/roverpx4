@@ -30,23 +30,26 @@ throttle     = 0
 acceleration = 0
 prev_vel     = 0
 dpwm         = 0
-
+T = 0
+v = 0
+prev_error = 0
 
 def spCb(msg):
     global prev_vel, acceleration, Ti, T, v
-    xdot    = msg.linear.x
-    ydot    = msg.linear.y
+    xddot    = msg.linear.x
+    yddot    = msg.linear.y
     forward = msg.linear.z
 
     T  = time.time()
-    dT = T - Ti
+    #dT = T - Ti
 
     v = forward*sqrt(xdot*xdot+ydot*ydot)
-    acceleration = (v - prev_vel)/dT
+    #acceleration = (v - prev_vel)/dT
 
-    prev_vel = v
-    Ti = T
+    #prev_vel = v
+    #Ti = T
 
+    acceleration = forward*sqrt(xddot*xddot + yddot*yddot)
     #### if the acceleration is noisy, try to filter T or dT before using calculating the acceleration
 
 
@@ -61,15 +64,15 @@ def UpdateSpeed():
 
     sum_error = sum_error + error
 
-    throttle = throttle + (kvp * error + kvd * prev_error + kvi * sum_error)
+    #throttle = throttle + (kvp * error + kvd * prev_error + kvi * sum_error)
 
     # if acceleration does not depend on the throttle, but the change in throttle
     # maybe try to control the increment in throttle. 
     # so that the throttle will be changing by dpwm... dpwm could be +- or 0
     # the PID tries to find the value of dpwm
 
-    #dpwm = dpwm + (kvp * error + kvd * prev_error + kvi * sum_error)
-    #throttle = throttle + dpwm
+    dpwm = dpwm + (kp * error + kd * prev_error + ki * sum_error)
+    throttle = throttle + dpwm
 
     if sum_error > 10:
         sum_error = 10
@@ -86,17 +89,17 @@ def UpdateSpeed():
     
 #------------------------------------------------------------------------- PID end-------------------------------------------------------------------------
     if throttle >= 0:
-        throttle = - throttle + 1480
+        pwm = - throttle + 1480
     if throttle < 0:
-        throttle = - throttle + 1520
+        pwm = - throttle + 1520
 
     if throttle > 1950:
-        throttle = 1950
+        pwm = 1950
     if throttle < 1050:
-        throttle = 1050
+        pwm = 1050
 
 
-    RcOver.channels = [1500,throttle,1500,throttle,0,0,0,0]
+    RcOver.channels = [1500,pwm,1500,pwm,0,0,0,0]
 
     print(round(v,3)," <-- V, a --> ",round(acceleration,3))
     print(round(v,3)," <-- V, Time --> ",round(T-T0,3))
@@ -120,7 +123,7 @@ def main():
     rate = rospy.Rate(40.0)
 
     # Subscribe to Rover's local position
-    rospy.Subscriber('velocity',Twist, spCb)
+    rospy.Subscriber('acceleration',Twist, spCb)
 
 
     # RCOveride publisher
