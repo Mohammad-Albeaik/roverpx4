@@ -27,8 +27,8 @@ yold 		= 0
 yawold 	= 0
 secondsold = 0
 micro_secold = 0
-b 			= [0.0009,    0.0019,    0.0009]
-a 			= [1.0000,   -1.9112,    0.9150]
+b 							= [0.0095,    0.0191,    0.0095]
+a 							= [1.0000,   -1.7056,    0.7437]
 by                          = [0.0009, 0.0019, 0.0009]
 ay                          = [1,-1.9112, 0.915]
 x_dot_memory 				= [0.00,    0.00,    0.00]
@@ -69,8 +69,8 @@ def UpdateVelocity():
     yspeed 		= ((y - yold)/dT)*1000000      # m/s
     yawspeed 	= (dyaw/dT)*1000000  # rad/s
 
-   # print(xspeed)
-#    print(yawspeed)
+    
+
 #------------------------------------------------------------------------- filter -------------------------------------------------------------------------
     x_dot_memory[0] = x_dot_memory[1];
     x_dot_memory[1] = x_dot_memory[2];
@@ -99,15 +99,15 @@ def UpdateVelocity():
     else:
        velocity.linear.z = -1
 
-    velocity.linear.x = round(filtered_x_dot_memory[2],3)
-    velocity.linear.y = round(filtered_y_dot_memory[2],3)
-    velocity.angular.z = round(filtered_yaw_dot_memory[2],3)
+    velocity.linear.x = round(filtered_x_dot_memory[2],4)
+    velocity.linear.y = round(filtered_y_dot_memory[2],4)
+    velocity.angular.z = round(filtered_yaw_dot_memory[2],
     xold 		= x
     yold 		= y
     yawold 	= yaw
     secondsold	= seconds
     micro_secold = micro_sec
-#    print(velocity.angular.z)
+
 #    print("speed ",sqrt(velocity.linear.x *velocity.linear.x + velocity.linear.y*velocity.linear.y))
    # print(velocity)
 

@@ -1,6 +1,6 @@
 <launch>
     
-        <node pkg="mypackage" type="acceleration_estimator.py" name="acceleration_estimator"  required="true" output="screen">
+        <node pkg="mypackage" type="accelaration_estimator.py" name="acceleration_estimator"  required="true" output="screen">
         </node>
 
         <node pkg="mypackage" type="accelerationController.py" name="Roveer_acceleration"  required="true" output="screen">

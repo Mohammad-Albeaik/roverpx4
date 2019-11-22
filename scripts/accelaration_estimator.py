@@ -17,27 +17,26 @@ y         = 0.0
 z         = 0.0
 local_ang = [0.0, 0.0, 0.0, 0.0]
 roll      = 0.0
-pitch     = 0.0 
+pitch     = 0.0
 yaw       = 0.0
 FirstTime = 1
 velocity = Twist()
 
 xold 		= 0
 yold 		= 0
-yawold 	= 0
 secondsold = 0
 micro_secold = 0
-b 							= [0.0095,    0.0191,    0.0095]
-a 							= [1.0000,   -1.7056,    0.7437]
+b 			= [0.00002915    ,0.00008744,    0.00008744   , 0.00002915]
+a 			= [1.0000  , -2.8744   , 2.7565  , -0.8819]
 by                          = [0.0009, 0.0019, 0.0009]
 ay                          = [1,-1.9112, 0.915]
-x_dot_memory 				= [0.00,    0.00,    0.00]
-filtered_x_dot_memory 		= [0.00,    0.00,    0.00]
-y_dot_memory 				= [0.00,    0.00,    0.00]
-filtered_y_dot_memory 		= [0.00,    0.00,    0.00]
-yaw_dot_memory 				= [0.00,    0.00,    0.00]
-filtered_yaw_dot_memory 	= [0.00,    0.00,    0.00]
-converion = 1000000*1000000
+x_dot_memory 	        	= [0.00,    0.00,    0.00,  0.00]
+filtered_x_dot_memory 		= [0.00,    0.00,    0.00,  0.00]
+y_dot_memory 		        = [0.00,    0.00,    0.00,  0.00]
+filtered_y_dot_memory 		= [0.00,    0.00,    0.00,  0.00]
+yspeedold = 0
+xspeedold = 0
+converion = 1000000
 
 
 def posCb(msg):
@@ -53,46 +52,43 @@ def posCb(msg):
 
 
 def UpdateVelocity():
-    global velocity, yaw, x, y, FirstTime, xold, yold, yawold,secondsold,micro_secold, a,b, x_dot_memory, y_dot_memory, yaw_dot_memory, filtered_x_dot_memory, filtered_y_dot_memory, filtered_yaw_dot_memory,ay,by,converion
+    global velocity, yaw, x, y, FirstTime, xold, yold,xspeedold, yspeedold,secondsold,micro_secold, a,b, x_dot_memory, y_dot_memory, filtered_x_dot_memory, filtered_y_dot_memory,ay,by,converion
 
     now = rospy.get_rostime()
     seconds 	= now.secs
     micro_sec 	= now.nsecs/1000
     dT  	 	= (seconds - secondsold)*1000000 + (micro_sec - micro_secold)      # time in seconds
 
-    dyaw        = yaw - yawold;
-    if dyaw > pi:
-        dyaw = dyaw - 2*pi
-    elif dyaw <-pi:
-        dyaw = dyaw + 2*pi
 
-    xacceleration 		= ((x - xold)/(dT*dT))*converion 			# m/s
-    yacceleration 		= ((y - yold)/dT*dT)*converion      # m/s
-    yawspeed 	= (dyaw/dT*dT)*converion  # rad/s
 
-    
-    print(xacceleration)
+    xspeed 		= ((x - xold)/(dT))*converion 			# m/s
+    yspeed 		= ((y - yold)/(dT))*converion      # m/s
+
+
+    xacceleration               = ((xspeed - xspeedold)/(dT))*converion                   # m/s
+    yacceleration               = ((yspeed - yspeedold)/(dT))*converion      # m/s
+
+
+#    print(yacceleration)
 #------------------------------------------------------------------------- filter -------------------------------------------------------------------------
     x_dot_memory[0] = x_dot_memory[1];
     x_dot_memory[1] = x_dot_memory[2];
-    x_dot_memory[2] = xacceleration;
+    x_dot_memory[2] = x_dot_memory[3];
+    x_dot_memory[3] = xacceleration;
     filtered_x_dot_memory[0] = filtered_x_dot_memory[1];
     filtered_x_dot_memory[1] = filtered_x_dot_memory[2];
-    filtered_x_dot_memory[2] = (float) ( (b[0]*x_dot_memory[2] + b[1]*x_dot_memory[1] + b[2]*x_dot_memory[0] - a[1]*filtered_x_dot_memory[1] - a[2]*filtered_x_dot_memory[0]));
+    filtered_x_dot_memory[2] = filtered_x_dot_memory[3];
+    filtered_x_dot_memory[3] = (float) ( (b[0]*x_dot_memory[3] + b[1]*x_dot_memory[2] + b[2]*x_dot_memory[1]+ b[3]*x_dot_memory[0] - a[1]*filtered_x_dot_memory[2] - a[2]*filtered_x_dot_memory[1]- a[3]*filtered_x_dot_memory[0]));
 
     y_dot_memory[0] = y_dot_memory[1];
     y_dot_memory[1] = y_dot_memory[2];
-    y_dot_memory[2] = yacceleration;
+    y_dot_memory[2] = y_dot_memory[3];
+    y_dot_memory[3] = yacceleration;
     filtered_y_dot_memory[0] = filtered_y_dot_memory[1];
     filtered_y_dot_memory[1] = filtered_y_dot_memory[2];
-    filtered_y_dot_memory[2] = (float) ( (b[0]*y_dot_memory[2] + b[1]*y_dot_memory[1] + b[2]*y_dot_memory[0] - a[1]*filtered_y_dot_memory[1] - a[2]*filtered_y_dot_memory[0]));
+    filtered_y_dot_memory[2] = filtered_y_dot_memory[3];
+    filtered_y_dot_memory[3] = (float) ( (b[0]*y_dot_memory[3] + b[1]*y_dot_memory[2] + b[2]*y_dot_memory[1] + b[3]*y_dot_memory[0] - a[1]*filtered_y_dot_memory[2] - a[2]*filtered_y_dot_memory[1] - a[3]*filtered_y_dot_memory[0] ));
 
-    yaw_dot_memory[0] = yaw_dot_memory[1];
-    yaw_dot_memory[1] = yaw_dot_memory[2];
-    yaw_dot_memory[2] = yawspeed;
-    filtered_yaw_dot_memory[0] = filtered_yaw_dot_memory[1];
-    filtered_yaw_dot_memory[1] = filtered_yaw_dot_memory[2];
-    filtered_yaw_dot_memory[2] = (float) ( (by[0]*yaw_dot_memory[2] + by[1]*yaw_dot_memory[1] + by[2]*yaw_dot_memory[0] - ay[1]*filtered_yaw_dot_memory[1] - ay[2]*filtered_yaw_dot_memory[0]));
 #-------------------------------------------------------------------------filter end-------------------------------------------------------------------------
     xfdot = cos(yaw)*velocity.linear.x + sin(yaw)*velocity.linear.y
     if xfdot >0:
@@ -102,14 +98,15 @@ def UpdateVelocity():
 
     velocity.linear.x = round(filtered_x_dot_memory[2],4)
     velocity.linear.y = round(filtered_y_dot_memory[2],4)
-    velocity.angular.z = round(filtered_yaw_dot_memory[2],4)
-		
+
+
     xold 		= x
     yold 		= y
-    yawold 	= yaw
+    xspeedold = xspeed
+    yspeedold = yspeed
     secondsold	= seconds
     micro_secold = micro_sec
-
+    print(velocity.linear.y)
 #    print("speed ",sqrt(velocity.linear.x *velocity.linear.x + velocity.linear.y*velocity.linear.y))
    # print(velocity)
 

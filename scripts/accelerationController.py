@@ -19,9 +19,9 @@ RcOver.channels = [1500,1500,1500,1500,0,0,0,0]
 sum_error 		= 0
 
 
-goal       = 0
+goal       = 0.4
 
-kp         = 0.1	#P for linear
+kp         = 1	#P for linear
 kd         = 0.0     #D for linear
 ki         = 0.0  #I for linear
 
@@ -43,19 +43,20 @@ def spCb(msg):
     T  = time.time()
     #dT = T - Ti
 
-    v = forward*sqrt(xdot*xdot+ydot*ydot)
+    v = forward*sqrt(xddot*xddot+yddot*yddot)
     #acceleration = (v - prev_vel)/dT
 
     #prev_vel = v
     #Ti = T
 
-    acceleration = forward*sqrt(xddot*xddot + yddot*yddot)
+    acceleration = sqrt(xddot*xddot + yddot*yddot)
+#    print(yddot)
     #### if the acceleration is noisy, try to filter T or dT before using calculating the acceleration
 
 
 
 def UpdateSpeed():
-    global v, acceleration, sum_error, kp, kd, ki, T, T0, throttle, dpwm
+    global v, acceleration, sum_error, kp, kd, ki, T, T0, throttle, dpwm, prev_error
 
 #------------------------------------------------------------------------- PID Start ----------------------------------------------------------------------
 
@@ -64,15 +65,15 @@ def UpdateSpeed():
 
     sum_error = sum_error + error
 
-    #throttle = throttle + (kvp * error + kvd * prev_error + kvi * sum_error)
+    throttle = throttle + (kp * error + kd * prev_error + ki * sum_error)
 
     # if acceleration does not depend on the throttle, but the change in throttle
-    # maybe try to control the increment in throttle. 
+    # maybe try to control the increment in throttle.
     # so that the throttle will be changing by dpwm... dpwm could be +- or 0
     # the PID tries to find the value of dpwm
 
-    dpwm = dpwm + (kp * error + kd * prev_error + ki * sum_error)
-    throttle = throttle + dpwm
+   # dpwm = dpwm + (kp * error + kd * prev_error + ki * sum_error)
+   # throttle = throttle + dpwm
 
     if sum_error > 10:
         sum_error = 10
@@ -83,27 +84,28 @@ def UpdateSpeed():
     prev_error = error
 
 
- 
 
 
-    
+
+
 #------------------------------------------------------------------------- PID end-------------------------------------------------------------------------
     if throttle >= 0:
         pwm = - throttle + 1480
     if throttle < 0:
         pwm = - throttle + 1520
 
-    if throttle > 1950:
+    if pwm > 1950:
         pwm = 1950
-    if throttle < 1050:
+    if pwm < 1050:
         pwm = 1050
 
-
-    RcOver.channels = [1500,pwm,1500,pwm,0,0,0,0]
-
-    print(round(v,3)," <-- V, a --> ",round(acceleration,3))
-    print(round(v,3)," <-- V, Time --> ",round(T-T0,3))
-    print(round(acceleration,3)," <-- a, Time --> ",round(T-T0,3))
+#    print(round(error,2), "---",round(acceleration,3), "pwm",round(pwm,1))
+   # pwm = 1500
+    RcOver.channels = [1500,pwm,1500,pwm-20,0,0,0,0]
+    print(round(acceleration,5))
+#    print(round(v,3)," <-- V, a --> ",round(acceleration,3))
+#    print(round(v,3)," <-- V, Time --> ",round(T-T0,3))
+   # print(round(acceleration,3)," <-- a, Time --> ",round(T-T0,3))
 
 
 
@@ -114,7 +116,7 @@ def UpdateSpeed():
 def main():
     global T0, Ti
 
-    time.sleep(2.5)
+    time.sleep(3.5)
 
     # Initiate node
     rospy.init_node('Roveer_acceleration', anonymous=True)
