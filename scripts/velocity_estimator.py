@@ -118,7 +118,7 @@ def main():
     rospy.init_node('velocity_estimator', anonymous=True)
 
     # ROS loop rate, [Hz]
-    rate = rospy.Rate(110.0) 
+    rate = rospy.Rate(90.0) 
 
     # Subscribe to drone's local position
     rospy.Subscriber('vrpn_client_node/mmb/pose', PoseStamped, posCb)

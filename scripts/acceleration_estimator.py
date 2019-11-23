@@ -19,8 +19,8 @@ ydot_old        = 0
 
 secondsold      = 0
 micro_secold    = 0
-b                           = [0.0009,    0.0019,    0.0009]
-a                           = [1,-1.9112, 0.915]
+b                           = [0.0201,    0.0402,    0.0201]
+a                           = [1.0000,   -1.5610,    0.6414]
 
 x_ddot_memory                = [0.00,    0.00,    0.00]
 filtered_x_ddot_memory       = [0.00,    0.00,    0.00]
@@ -33,12 +33,10 @@ v       = 0
 prev_v  = 0
 
 def spCb(msg):
-    global v,w
+    global v,w, xdot, ydot
     xdot    = msg.linear.x
     ydot    = msg.linear.y
     forward = msg.linear.z
-
-    w = yawdot
     v = forward*sqrt(xdot*xdot+ydot*ydot)
 
 
@@ -51,13 +49,12 @@ def UpdateVelocity():
     micro_sec   = now.nsecs/1000
     dT          = (seconds - secondsold)*1000000 + (micro_sec - micro_secold)      # time in seconds
 
-    
 
 
     xacceleration      = ((xdot - xdot_old)/(dT))*1000000             # m/s
     yacceleration      = ((ydot - ydot_old)/dT)*1000000      # m/s
 
-    print(xacceleration)    
+#    print(xacceleration)
 
 #------------------------------------------------------------------------- filter -------------------------------------------------------------------------
     x_ddot_memory[0] = x_ddot_memory[1];
@@ -75,23 +72,22 @@ def UpdateVelocity():
     filtered_y_ddot_memory[2] = (float) ( (b[0]*y_ddot_memory[2] + b[1]*y_ddot_memory[1] + b[2]*y_ddot_memory[0] - a[1]*filtered_y_ddot_memory[1] - a[2]*filtered_y_ddot_memory[0]));
 
    #-------------------------------------------------------------------------filter end-------------------------------------------------------------------------
- 
+
     if (v - prev_v)>0:
-        acceleration.linear.x = 1
-        else:
-        acceleration.linear.x = -1
+        acceleration.linear.z = 1
+    else:
+        acceleration.linear.z = -1
 
     acceleration.linear.x = round(filtered_x_ddot_memory[2],4)
     acceleration.linear.y = round(filtered_y_ddot_memory[2],4)
-        
+
     xdot_old        = xdot
     ydot_old        = ydot
     prev_v          = v
     secondsold      = seconds
     micro_secold    = micro_sec
 
-#    print("speed ",sqrt(velocity.linear.x *velocity.linear.x + velocity.linear.y*velocity.linear.y))
-   # print(velocity)
+    print(acceleration.linear.z*sqrt(acceleration.linear.x *acceleration.linear.x + acceleration.linear.y*acceleration.linear.y))
 
 # Main function
 def main():

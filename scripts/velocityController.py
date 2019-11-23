@@ -535,7 +535,7 @@ def UpdateSpeed():
 
 
 #    print(round(dv,3))
-    print(v)
+#    print(v)
     RcOver.channels = [1500,WR,1500,WL,0,0,0,0]   # 4th
 
 
