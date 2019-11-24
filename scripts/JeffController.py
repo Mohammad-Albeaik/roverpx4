@@ -63,9 +63,9 @@ def lvCb(msg):
 
 
 #....................... loading controller matrices ....
-def ControllerMatrices()
+def ControllerMatrices():
 
-    allmat  = scipy.io.loadmat('data1.mat')
+    allmat  = scipy.io.loadmat('bigmatrices.mat')
     M       = allmat.get('M')
     alpha   = allmat.get('alpha')
     beta    = allmat.get('beta')
