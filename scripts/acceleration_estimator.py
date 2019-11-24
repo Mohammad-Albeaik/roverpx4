@@ -19,8 +19,8 @@ ydot_old        = 0
 
 secondsold      = 0
 micro_secold    = 0
-b                           = [0.0201,    0.0402,    0.0201]
-a                           = [1.0000,   -1.5610,    0.6414]
+b                           = [.0015,    0.0029,    0.0015]
+a                           = [1.0000,   -1.8890,    0.8949]
 
 x_ddot_memory                = [0.00,    0.00,    0.00]
 filtered_x_ddot_memory       = [0.00,    0.00,    0.00]
@@ -54,7 +54,7 @@ def UpdateVelocity():
     xacceleration      = ((xdot - xdot_old)/(dT))*1000000             # m/s
     yacceleration      = ((ydot - ydot_old)/dT)*1000000      # m/s
 
-#    print(xacceleration)
+   # print(xacceleration)
 
 #------------------------------------------------------------------------- filter -------------------------------------------------------------------------
     x_ddot_memory[0] = x_ddot_memory[1];
@@ -87,7 +87,7 @@ def UpdateVelocity():
     secondsold      = seconds
     micro_secold    = micro_sec
 
-    print(acceleration.linear.z*sqrt(acceleration.linear.x *acceleration.linear.x + acceleration.linear.y*acceleration.linear.y))
+#    print(acceleration.linear.z*sqrt(acceleration.linear.x *acceleration.linear.x + acceleration.linear.y*acceleration.linear.y))
 
 # Main function
 def main():

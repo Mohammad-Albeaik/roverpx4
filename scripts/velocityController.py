@@ -33,7 +33,7 @@ kwi         = 0.00 	#I for angular
 
 old_v       = 0
 old_w       = 0
-vi = 0
+vi = 2.1
 wi = 0
 
 xdot                   = 0.0
@@ -444,12 +444,7 @@ a = [   0,
     0.3432,
     0.3348,
     0.3265,
-    0.3185,
-    0.3106,
-    0.3029,
-    0.2954,
-    0.2881,
-    0.2810]
+    0.3185]
 def spCb(msg):
     global v,w
     xdot    = msg.linear.x
@@ -506,12 +501,7 @@ def UpdateSpeed():
     old_v       = dv
     old_w       = dw
 
-    ii = a[0]/42.935
-    a.pop(0)
-    g = g + ii  # g is goal velocity
-    vi = 13.4498* g + 2.14981
-#    vg.pop(0)
-
+#    vi = 13.4498* vg + 2.14981
 #------------------------------------------------------------------------- PID end-------------------------------------------------------------------------
     r = 0.065 # radius 13 cm
     L = 0.33 # length between wheels 33 cm
@@ -535,8 +525,8 @@ def UpdateSpeed():
 
 
 #    print(round(dv,3))
-#    print(v)
-    RcOver.channels = [1500,WR,1500,WL,0,0,0,0]   # 4th
+ #   print(vi)
+    RcOver.channels = [1500,WR,1500,WL-20,0,0,0,0]   # 4th
 
 
 
