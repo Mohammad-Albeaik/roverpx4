@@ -27,8 +27,8 @@ yold 		= 0
 yawold 	= 0
 secondsold = 0
 micro_secold = 0
-b 			= [0.0009,    0.0019,    0.0009]
-a 			= [1.0000,   -1.9112,    0.9150]
+b 			= [0.0075,    0.0151,    0.0075]
+a 			= [1.0000,   -1.7399,    0.7700]
 by                          = [0.0009, 0.0019, 0.0009]
 ay                          = [1,-1.9112, 0.915]
 x_dot_memory 				= [0.00,    0.00,    0.00]
@@ -69,7 +69,7 @@ def UpdateVelocity():
     yspeed 		= ((y - yold)/dT)*1000000      # m/s
     yawspeed 	= (dyaw/dT)*1000000  # rad/s
 
-   # print(xspeed)
+#    print(yspeed)
 #    print(yawspeed)
 #------------------------------------------------------------------------- filter -------------------------------------------------------------------------
     x_dot_memory[0] = x_dot_memory[1];
@@ -118,7 +118,7 @@ def main():
     rospy.init_node('velocity_estimator', anonymous=True)
 
     # ROS loop rate, [Hz]
-    rate = rospy.Rate(90.0) 
+    rate = rospy.Rate(70.0)
 
     # Subscribe to drone's local position
     rospy.Subscriber('vrpn_client_node/mmb/pose', PoseStamped, posCb)
