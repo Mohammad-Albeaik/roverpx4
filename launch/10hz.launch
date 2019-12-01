@@ -1,6 +1,6 @@
 <launch>
     
-        <node pkg="mypackage" type="velocity_estimator.py" name="velocity_estimator"  required="true" output="screen">
+        <node pkg="mypackage" type="speed_estimator.py" name="speed_estimator"  required="true" output="screen">
         </node>
 
 
