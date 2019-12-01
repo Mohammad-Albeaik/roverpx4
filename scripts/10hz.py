@@ -40,6 +40,8 @@ u = 0
 states = [0,0,0,0]
 states = np.array(states).reshape(4,1)
 Ti = time.time()
+input_acceleration = 0
+
 
 #............................ agent's callback functions 
 
@@ -82,12 +84,12 @@ def lvCb(msg):
 #....................... loading controller matrices ....
 def ControllerMatrices():
     global M, alpha, beta,A,B
-    allmat  = scipy.io.loadmat('../catkin/src/roverpx4/script/10hz.mat')
+    allmat  = scipy.io.loadmat('../catkin_ws/src/roverpx4/scripts/10hz.mat')
     M       = allmat.get('M')
     alpha   = allmat.get('alpha')
     beta    = allmat.get('beta')
     A       = allmat.get('A')
-    B       = allmat.get('B')
+    B       = allmat.get('B2')
     M       = np.array(M) # For converting to a NumPy array
     alpha   = np.array(alpha) # For converting to a NumPy array
     beta    = np.array(beta) # For converting to a NumPy array
@@ -95,9 +97,8 @@ def ControllerMatrices():
     B       = np.array(B) # For converting to a NumPy array
 
 
-
 def controller():
-    global x, y, v, w, vdot, lx, ly, lv, lw, M, alpha, beta, u, prev_v, prev_s, states,a, Ti
+    global x, y, v, w, vdot, lx, ly, lv, lw, M, alpha, beta, u, prev_v, prev_s, states, Ti, A,B,input_acceleration
 
     T = time.time()
     dT = T - Ti
@@ -105,12 +106,13 @@ def controller():
 
     desired_distance = 0.75
     d = sqrt((x-lx)*(x-lx) + (y-ly)*(y-ly)) - desired_distance
-    v = prev_v + vdot * dT
+#    v = prev_v + vdot * dT
     s = v + vdot
-
+    s = (v-0.9048*prev_v)/0.0952
+#    print(v,states[2])
     states = [lv, d, v, s]
     states = np.array(states).reshape(4,1)
-   
+
     scaling  = np.max(np.max(np.matmul(M,states)),0.01) # Prevent division by zero
     umax     = np.min(np.matmul(alpha,states).reshape(len(beta),1)/scaling + beta)
     umin     = np.max(np.matmul(alpha,states).reshape(len(beta),1)/scaling - beta)
@@ -123,16 +125,14 @@ def controller():
     prev_v = v
 
 
-  
 
 
+def UpdateAcceleration():
+    global input_acceleration, vi, states,x,y,lx,ly
 
- def UpdateAcceleration():
-    global input_acceleration, vi
-
-    vi = vi + 0.3396*input_acceleration
-   # vi = vi + 0.3396*input_acceleration    
- #   vi = 13.4498* states[2] + 2.14981
+ #   vi = vi + 0.3396*input_acceleration
+   # vi = vi + 0.3396*input_acceleration
+    vi = 13.45* states[2] + 2.15
 
     r = 0.065
     if vi >0:
@@ -142,12 +142,14 @@ def controller():
     if vi ==0:
         pwm = 1500
 
-    if pwm < 1050:
-        pwm = 1050
-    if pwm > 1950:
-        pwm = 1950
+    if pwm < 1200:
+        pwm = 1200
+    if pwm > 1800:
+        pwm = 1800
 
 #    pwm = 1500
+#    print(states[2])
+    print(sqrt((x-lx)*(x-lx) + (y-ly)*(y-ly)) - 0.75)
     RcOver.channels = [1500, pwm,1500, pwm-20,0,0,0,0]   # 4th
 
 
