@@ -10,7 +10,7 @@ from math import atan2, sqrt, pi, cos, sin
 from tf.transformations import euler_from_quaternion
 import numpy as np
 from std_msgs.msg import String
-from mavros_msgs.msg import OverrideRCIn
+from mavros_msgs.msg import OverrideRCIn,RCIn
 import scipy.io
 import time
 import os
@@ -41,22 +41,41 @@ states = [0,0,0,0]
 states = np.array(states).reshape(4,1)
 Ti = time.time()
 input_acceleration = 0
-
-
+z                               = 0.0
+local_ang                       = [0.0, 0.0, 0.0, 0.0]
+roll                            = 0.0
+pitch                           = 0.0
+yaw                             = 0.0
+wi = 0
+d = 0
+summ_error = 0
+wr = 0
+wl = 0
 #............................ agent's callback functions 
 
 def posCb(msg):
-    global x, y
+    global x, y, yaw, roll, pitch, local_ang
     x = msg.pose.position.x
     y = msg.pose.position.y
+    z = msg.pose.position.z
+
+    local_ang = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
+    roll, pitch, yaw = euler_from_quaternion(local_ang)
+
+def rc(msg):
+    global wr, wl,v ,w
+    wr = msg.channels[1]
+    wl = msg.channels[3]
+    print('v',v,'w',w,'Right',wr,'Left',wl)
 
 def vCb(msg):
     global v,w
     xdot    = msg.linear.x
     ydot    = msg.linear.y
     forward = msg.linear.z
-    w = yawdot
+    w = msg.angular.z
     v = forward*sqrt(xdot*xdot+ydot*ydot)
+    v = msg.angular.x
 
 def acCb(msg):
     global vdot
@@ -98,7 +117,7 @@ def ControllerMatrices():
 
 
 def controller():
-    global x, y, v, w, vdot, lx, ly, lv, lw, M, alpha, beta, u, prev_v, prev_s, states, Ti, A,B,input_acceleration
+    global x, y, v, w, vdot, lx, ly, lv, lw, M, alpha, beta, u, prev_v, prev_s, states, Ti, A,B,input_acceleration,d,s
 
     T = time.time()
     dT = T - Ti
@@ -107,7 +126,7 @@ def controller():
     desired_distance = 0.75
     d = sqrt((x-lx)*(x-lx) + (y-ly)*(y-ly)) - desired_distance
 #    v = prev_v + vdot * dT
-    s = v + vdot
+#    s = v + vdot
     s = (v-0.9048*prev_v)/0.0952
 #    print(v,states[2])
     states = [lv, d, v, s]
@@ -121,20 +140,50 @@ def controller():
     states = np.matmul(A,states.reshape(4,1))+B*u
 #    print(states)
     #input_acceleration = - v + newS
-    input_acceleration = (states[2]-v)/0.025
+    input_acceleration = (states[2]-v)/0.1
     prev_v = v
 
 
 
-
 def UpdateAcceleration():
-    global input_acceleration, vi, states,x,y,lx,ly
+    global input_acceleration, vi, states,x,y,lx,ly,v,T0, yaw, wi,d,s, lv, summ_error
 
  #   vi = vi + 0.3396*input_acceleration
    # vi = vi + 0.3396*input_acceleration
-    vi = 13.45* states[2] + 2.15
+    T = time.time()
 
+
+    if states[2]>=0:
+#      	vi = 13.28* states[2] + 2.3
+#       vi = 13.7041*states[2] +1.66759
+       vi = 13.6041*states[2] +1.66759
+    if states[2]<-0.004:
+#    	vi = 13.25* states[2] - 2.33
+#       vi = 12.4242 * states[2] -0.812545
+       vi = 12.3242 * states[2] -0.8122545
+    L = 0.33 # length between wheels 33 cm
     r = 0.065
+
+
+    if vi >70:
+        vi = 70
+    if vi <-70:
+        vi = -70
+
+    if input_acceleration > 6:
+       input_acceleration = 6
+    if input_acceleration < -6:
+       input_acceleration = -6
+
+
+    vi = vi + 1*input_acceleration
+
+    if vi >70:
+       vi = 70
+    if vi <-70:
+       vi = -70
+
+
     if vi >0:
         pwm = 1480 - vi/r
     if vi <0:
@@ -142,28 +191,91 @@ def UpdateAcceleration():
     if vi ==0:
         pwm = 1500
 
-    if pwm < 1200:
-        pwm = 1200
-    if pwm > 1800:
-        pwm = 1800
+    if pwm < 1150:
+        pwm = 1150
+    if pwm > 1850:
+        pwm = 1850
 
-#    pwm = 1500
-#    print(states[2])
-    print(sqrt((x-lx)*(x-lx) + (y-ly)*(y-ly)) - 0.75)
-    RcOver.channels = [1500, pwm,1500, pwm-20,0,0,0,0]   # 4th
 
+    alpha = (-pi/2) - yaw
+    wi = 70*alpha
+
+    if wi >20:
+        wi = 20
+    if wi <-20:
+        wi = -20
+
+
+
+
+    WR =   vi/r +L/r * wi
+    WL =   2* vi/r - WR
+
+    if WR > 0:
+        WR = - WR + 1480
+    elif WR <0:
+        WR = - WR +1520
+    else:
+        WR = 1500
+    if WL > 0:
+        WL = - WL + 1480 - 10
+    elif WL < 0:
+        WL = - WL +1520 +10
+    else:
+        WL = 1500
+
+
+#    print(v,wr,wl)
+#    print(lv,d,v,s,states[2], input_acceleration)
+#    print(WR,WL)
+#    print(sqrt((x-lx)*(x-lx) + (y-ly)*(y-ly)) - 0.75)
+    RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
+
+
+def update():
+    global input_acceleration, vi, states,x,y,lx,ly,v,T0, yaw, wi,d,s, lv, summ_error
+    error = states[2] - v
+    summ_error = summ_error + error
+    if summ_error>20:
+       summ_error = 20
+    if summ_error<-20:
+       summ_error = -20
+    kp = 0.9
+    ki = 0.0
+    vi = vi + kp* error + ki * summ_error
+
+    L = 0.33 # length between wheels 33 cm
+    r = 0.065
+    WR =   vi/r +L/r * wi
+    WL =   2* vi/r - WR
+
+    if WR > 0:
+        WR = - WR + 1480
+    elif WR <0:
+        WR = - WR +1520
+    else:
+        WR = 1500
+    if WL > 0:
+        WL = - WL + 1480 - 10
+    elif WL < 0:
+        WL = - WL +1520 +10
+    else:
+        WL = 1500
+
+    RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 
 # Main function
 def main():
+    global T0
 
-    time.sleep(3.5)
-
+    time.sleep(4)
+    T0 = time.time()
     # Initiate node
     rospy.init_node('jeffController', anonymous=True)
 
     # ROS loop rate, [Hz]
-    rate = rospy.Rate(40.0)
+    rate = rospy.Rate(10.0)
 
     # Subscribe to leader's local position
     rospy.Subscriber('vrpn_client_node/leader/pose', PoseStamped, lposCb) 
@@ -177,6 +289,8 @@ def main():
     # Subscribe to your local acceleration
     rospy.Subscriber('acceleration',Twist, acCb)
 
+    rospy.Subscriber('mavros/rc/in', RCIn, rc)
+
 
     rc_pub = rospy.Publisher('mavros/rc/override',OverrideRCIn, queue_size=1)
 
@@ -186,10 +300,12 @@ def main():
     # ROS main loop
     while not rospy.is_shutdown():
             counter = counter +1
-            if counter%10 ==0:
+            if counter%1 ==0:
               controller()
-            UpdateAcceleration()
-            rc_pub.publish(RcOver)
+              UpdateAcceleration()
+         #   else:
+         #     update()
+#            rc_pub.publish(RcOver)
             rate.sleep()
 
 
