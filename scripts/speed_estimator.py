@@ -142,7 +142,7 @@ def main():
     rate = rospy.Rate(60.0)
 
     # Subscribe to drone's local position
-    rospy.Subscriber('vrpn_client_node/mmb/pose', PoseStamped, posCb)
+    rospy.Subscriber('vrpn_client_node/' + rospy.get_param('rover') + '/pose', PoseStamped, posCb)
 
     # Speed publisher
     velocity_pub = rospy.Publisher('velocity',Twist, queue_size=1)

@@ -99,7 +99,7 @@ def main():
     rate = rospy.Rate(60.0) 
 
     # Subscribe to Rover's local position
-    rospy.Subscriber('velocity',Twist, spCb)
+    rospy.Subscriber(rospy.get_param('rover') + '/velocity',Twist, spCb)
 
     # Speed publisher
     acceleration_pub = rospy.Publisher('acceleration',Twist, queue_size=1)
