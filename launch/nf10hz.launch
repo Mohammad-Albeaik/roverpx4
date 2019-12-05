@@ -1,16 +1,30 @@
 <launch>
     
-        <node pkg="mypackage" type="speed_estimator.py" name="speed_estimator"  required="true" output="screen">
-        </node>
 
 
-        <node pkg="mypackage" type="leader_velocity_estimator.py" name="leader_velocity_estimator"  required="true" output="screen">
-        </node>
+ 	 leader = 'rover1'
+ 	 rover = 'rover2'
+
+	<param name="leader"                 type="string" value=leader/>
+	<param name="rover"                 type="string" value=rover/>
 
 
+ 	<group ns=leader>
+       		 <node pkg="mypackage" type="speed_estimator.py" name="speed_estimator"  required="true" output="screen">
+       		 </node>
 
-        <node pkg="mypackage" type="acceleration_estimator.py" name="acceleration_estimator"  required="true" output="screen">
-        </node>
+   	</group>
+
+
+   	<group ns=rover>
+        	<node pkg="mypackage" type="speed_estimator.py" name="speed_estimator"  required="true" output="screen">
+        	</node>
+
+       	 	<node pkg="mypackage" type="acceleration_estimator.py" name="acceleration_estimator"  required="true" output="screen">
+        	</node>
+
+   	</group>
+
 
 
         <node pkg="mypackage" type="10hz.py" name="jeffController"  required="true" output="screen">

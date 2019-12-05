@@ -48,9 +48,7 @@ pitch                           = 0.0
 yaw                             = 0.0
 wi = 0
 d = 0
-summ_error = 0
-wr = 0
-wl = 0
+
 #............................ agent's callback functions 
 
 def posCb(msg):
@@ -62,11 +60,6 @@ def posCb(msg):
     local_ang = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
     roll, pitch, yaw = euler_from_quaternion(local_ang)
 
-def rc(msg):
-    global wr, wl,v ,w
-    wr = msg.channels[1]
-    wl = msg.channels[3]
-    print('v',v,'w',w,'Right',wr,'Left',wl)
 
 def vCb(msg):
     global v,w
@@ -103,7 +96,7 @@ def lvCb(msg):
 #....................... loading controller matrices ....
 def ControllerMatrices():
     global M, alpha, beta,A,B
-    allmat  = scipy.io.loadmat('../catkin_ws/src/roverpx4/scripts/10hz.mat')
+    allmat  = scipy.io.loadmat('../catkin_ws/src/roverpx4/scripts/2w10hz.mat')
     M       = allmat.get('M')
     alpha   = allmat.get('alpha')
     beta    = allmat.get('beta')
@@ -232,37 +225,6 @@ def UpdateAcceleration():
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 
-def update():
-    global input_acceleration, vi, states,x,y,lx,ly,v,T0, yaw, wi,d,s, lv, summ_error
-    error = states[2] - v
-    summ_error = summ_error + error
-    if summ_error>20:
-       summ_error = 20
-    if summ_error<-20:
-       summ_error = -20
-    kp = 0.9
-    ki = 0.0
-    vi = vi + kp* error + ki * summ_error
-
-    L = 0.33 # length between wheels 33 cm
-    r = 0.065
-    WR =   vi/r +L/r * wi
-    WL =   2* vi/r - WR
-
-    if WR > 0:
-        WR = - WR + 1480
-    elif WR <0:
-        WR = - WR +1520
-    else:
-        WR = 1500
-    if WL > 0:
-        WL = - WL + 1480 - 10
-    elif WL < 0:
-        WL = - WL +1520 +10
-    else:
-        WL = 1500
-
-    RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 
 # Main function
@@ -278,18 +240,16 @@ def main():
     rate = rospy.Rate(10.0)
 
     # Subscribe to leader's local position
-    rospy.Subscriber('vrpn_client_node/leader/pose', PoseStamped, lposCb) 
+    rospy.Subscriber('vrpn_client_node/'+ rospy.get_param('leader') +'/pose', PoseStamped, lposCb) 
     # Subscribe to leader's local velocity
-    rospy.Subscriber('velocity_leader',Twist, lvCb)
+    rospy.Subscriber(rospy.get_param('leader')+'/velocity',Twist, lvCb)
 
     # Subscribe to your local position
-    rospy.Subscriber('vrpn_client_node/mmb/pose', PoseStamped, posCb)
+    rospy.Subscriber('vrpn_client_node/' + rospy.get_param('rover') + '/pose', PoseStamped, posCb)
     # Subscribe to your local velocity
-    rospy.Subscriber('velocity',Twist, vCb)
+    rospy.Subscriber(rospy.get_param('rover') +'/velocity',Twist, vCb)
     # Subscribe to your local acceleration
-    rospy.Subscriber('acceleration',Twist, acCb)
-
-    rospy.Subscriber('mavros/rc/in', RCIn, rc)
+    rospy.Subscriber(rospy.get_param('rover') + '/acceleration',Twist, acCb)
 
 
     rc_pub = rospy.Publisher('mavros/rc/override',OverrideRCIn, queue_size=1)
@@ -303,8 +263,6 @@ def main():
             if counter%1 ==0:
               controller()
               UpdateAcceleration()
-         #   else:
-         #     update()
 #            rc_pub.publish(RcOver)
             rate.sleep()
 
