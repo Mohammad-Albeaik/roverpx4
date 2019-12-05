@@ -169,7 +169,7 @@ def UpdateAcceleration():
        input_acceleration = -6
 
 
-    vi = vi + 1*input_acceleration
+    vi = vi + 1.45*input_acceleration
 
     if vi >70:
        vi = 70
@@ -218,8 +218,8 @@ def UpdateAcceleration():
         WL = 1500
 
 
-#    print(v,wr,wl)
-#    print(lv,d,v,s,states[2], input_acceleration)
+#    print(v,lx,ly)
+    print(lv,d,v,s,states[2], input_acceleration)
 #    print(WR,WL)
 #    print(sqrt((x-lx)*(x-lx) + (y-ly)*(y-ly)) - 0.75)
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
@@ -263,7 +263,7 @@ def main():
             if counter%1 ==0:
               controller()
               UpdateAcceleration()
-#            rc_pub.publish(RcOver)
+            rc_pub.publish(RcOver)
             rate.sleep()
 
 

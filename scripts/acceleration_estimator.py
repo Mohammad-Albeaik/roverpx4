@@ -102,7 +102,7 @@ def main():
     rospy.Subscriber(rospy.get_param('rover') + '/velocity',Twist, spCb)
 
     # Speed publisher
-    acceleration_pub = rospy.Publisher('acceleration',Twist, queue_size=1)
+    acceleration_pub = rospy.Publisher(rospy.get_param('rover') + '/acceleration',Twist, queue_size=1)
 
 
     # ROS main loop

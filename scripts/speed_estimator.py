@@ -145,7 +145,7 @@ def main():
     rospy.Subscriber('vrpn_client_node/' + rospy.get_param('rover') + '/pose', PoseStamped, posCb)
 
     # Speed publisher
-    velocity_pub = rospy.Publisher('velocity',Twist, queue_size=1)
+    velocity_pub = rospy.Publisher(rospy.get_param('rover') +'/velocity',Twist, queue_size=1)
 
 
     # ROS main loop

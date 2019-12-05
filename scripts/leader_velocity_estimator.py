@@ -121,10 +121,10 @@ def main():
     rate = rospy.Rate(110.0) 
 
     # Subscribe to drone's local position
-    rospy.Subscriber('vrpn_client_node/leader/pose', PoseStamped, posCb)
+    rospy.Subscriber('vrpn_client_node/' +rospy.get_param('leader') + '/pose', PoseStamped, posCb)
 
     # Speed publisher
-    velocity_pub = rospy.Publisher('velocity_leader',Twist, queue_size=1)
+    velocity_pub = rospy.Publisher(rospy.get_param('leader') + '/velocity',Twist, queue_size=1)
 
 
     # ROS main loop
