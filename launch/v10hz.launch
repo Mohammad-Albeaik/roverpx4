@@ -1,0 +1,22 @@
+<launch>
+    
+	<param name="leader"                 type="string" value="leader"/>
+	<param name="rover"                 type="string" value="rover1"/>
+
+
+        <node pkg="mypackage" type="leader_velocity_estimator.py" name="leader_velocity_estimator"  required="true" output="screen">
+        </node>
+
+
+         <node pkg="mypackage" type="speed_estimator.py" name="speed_estimator"  required="true" output="screen">
+         </node>
+
+         <node pkg="mypackage" type="acceleration_estimator.py" name="acceleration_estimator"  required="true" output="screen">
+         </node>
+
+
+        <node pkg="mypackage" type="v10hz.py" name="jeffController"  required="true" output="screen">
+        </node>
+
+</launch>
+

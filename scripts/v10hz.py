@@ -37,8 +37,8 @@ lw	=0
 yawdot = 0
 vi = 2
 u = 0
-states = [0,0,0,0]
-states = np.array(states).reshape(4,1)
+states = [0,0,0]
+states = np.array(states).reshape(3,1)
 Ti = time.time()
 input_acceleration = 0
 z                               = 0.0
@@ -96,7 +96,7 @@ def lvCb(msg):
 #....................... loading controller matrices ....
 def ControllerMatrices():
     global M, alpha, beta,A,B
-    allmat  = scipy.io.loadmat('../catkin_ws/src/roverpx4/scripts/2w10hz.mat')
+    allmat  = scipy.io.loadmat('../catkin_ws/src/roverpx4/scripts/v10hz.mat')
     M       = allmat.get('M')
     alpha   = allmat.get('alpha')
     beta    = allmat.get('beta')
@@ -118,22 +118,18 @@ def controller():
 
     desired_distance = 0.75
     d = sqrt((x-lx)*(x-lx) + (y-ly)*(y-ly)) - desired_distance
-#    v = prev_v + vdot * dT
-#    s = v + vdot
-    s = (v-0.9048*prev_v)/0.0952
-#    print(v,states[2])
-    states = [lv, d, v, s]
-    states = np.array(states).reshape(4,1)
+
+    states = [lv, d, v]
+    states = np.array(states).reshape(3,1)
 
     scaling  = np.max(np.max(np.matmul(M,states)),0.01) # Prevent division by zero
     umax     = np.min(np.matmul(alpha,states).reshape(len(beta),1)/scaling + beta)
     umin     = np.max(np.matmul(alpha,states).reshape(len(beta),1)/scaling - beta)
     u        = scaling*(umax+umin)/2
 
-    states = np.matmul(A,states.reshape(4,1))+B*u
-#    print(states)
-    #input_acceleration = - v + newS
-    input_acceleration = (states[2]-v)/0.1
+    states = np.matmul(A,states.reshape(3,1))+B*u
+
+    input_acceleration = u
     prev_v = v
 
 
@@ -225,10 +221,10 @@ def UpdateAcceleration():
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 def speedC():
-    global states,vi,wi,yaw,x,v
+    global states,vi,wi,yaw,x,v,input_acceleration
 
     kp = 0.3
-    e = states[2] - v
+    e = input_acceleration - v
     vi = vi + kp * e
 
     if vi >50:
