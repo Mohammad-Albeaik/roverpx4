@@ -96,7 +96,7 @@ def lvCb(msg):
 #....................... loading controller matrices ....
 def ControllerMatrices():
     global M, alpha, beta,A,B
-    allmat  = scipy.io.loadmat('../catkin_ws/src/roverpx4/scripts/2w10hz.mat')
+    allmat  = scipy.io.loadmat('../catkin_ws/src/roverpx4/scripts/v10hz.mat')
     M       = allmat.get('M')
     alpha   = allmat.get('alpha')
     beta    = allmat.get('beta')
@@ -287,7 +287,7 @@ def main():
     rospy.init_node('jeffController', anonymous=True)
 
     # ROS loop rate, [Hz]
-    rate = rospy.Rate(10.0)
+    rate = rospy.Rate(30.0)
 
     # Subscribe to leader's local position
     rospy.Subscriber('vrpn_client_node/'+ rospy.get_param('leader') +'/pose', PoseStamped, lposCb) 
@@ -310,12 +310,12 @@ def main():
     # ROS main loop
     while not rospy.is_shutdown():
             counter = counter +1
-            if counter%1 ==0:
+            if counter%3 ==0:
               controller()
-              UpdateAcceleration()
-#              speedC()
-#            else:
-#              speedC()
+              #UpdateAcceleration()
+              speedC()
+            else:
+              speedC()
             rc_pub.publish(RcOver)
             rate.sleep()
 
