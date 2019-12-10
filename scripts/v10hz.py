@@ -221,9 +221,13 @@ def UpdateAcceleration():
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 def speedC():
-    global states,vi,wi,yaw,x,v,input_acceleration
+    global states,vi,wi,yaw,x,v,input_acceleration, T0
 
-    kp = 0.08
+    kp = 0.1
+    input_acceleration = 0.001
+    T = time.time() - T0
+    if  T>3:
+        input_acceleration =- 1.001
     e = input_acceleration - v
     vi = vi + kp * e
 
@@ -270,8 +274,11 @@ def speedC():
     else:
         WL = 1500
 
-#    print(input_acceleration)
-    print(lv,d,v,states[2], input_acceleration)
+    if (y>3.3 and vi <0) or (y<-3.3 and vi >0):
+       WL = 1500
+       WR = 1500
+    print(v,T,input_acceleration)
+#    print(lv,d,v,states[2], input_acceleration)
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 # Main function
