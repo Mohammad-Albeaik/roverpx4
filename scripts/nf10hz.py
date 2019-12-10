@@ -145,23 +145,24 @@ def UpdateAcceleration():
    # vi = vi + 0.3396*input_acceleration
     T = time.time()
 
-
+#    states[2] = -1.1
     if states[2]>=0:
 #      	vi = 13.28* states[2] + 2.3
 #       vi = 13.7041*states[2] +1.66759
-       vi = 13.6041*states[2] +1.66759
+#       vi = 13.6041*states[2] +1.66759
+       vi = 1.65278 + 10.6944 * states[2]
     if states[2]<-0.004:
 #    	vi = 13.25* states[2] - 2.33
 #       vi = 12.4242 * states[2] -0.812545
-       vi = 12.3242 * states[2] -0.8122545
+       vi = 10.5485 * states[2] -0.551178
     L = 0.33 # length between wheels 33 cm
     r = 0.065
 
 
-    if vi >70:
-        vi = 70
-    if vi <-70:
-        vi = -70
+    if vi >50:
+        vi = 50
+    if vi <-50:
+        vi = -50
 
     if input_acceleration > 6:
        input_acceleration = 6
@@ -169,29 +170,85 @@ def UpdateAcceleration():
        input_acceleration = -6
 
 
-    vi = vi + 1.45*input_acceleration
+    vi = vi + 0.65*input_acceleration
 
-    if vi >70:
-       vi = 70
-    if vi <-70:
-       vi = -70
+    if vi >50:
+       vi = 50
+    if vi <-50:
+       vi = -50
 
 
+    kg = 80
+    kh = 50
+    gamma1 = -kg * x;
+    des_ang = -pi/2
+    gamma2 = kh * (des_ang - yaw);
     if vi >0:
-        pwm = 1480 - vi/r
+       wi = gamma1 + gamma2;
     if vi <0:
-        pwm = 1520 - vi/r
-    if vi ==0:
-        pwm = 1500
+       wi = -gamma1 + gamma2
+  #  alpha = (-pi/2) - yaw
+  #  wi = 70*alpha
 
-    if pwm < 1150:
-        pwm = 1150
-    if pwm > 1850:
-        pwm = 1850
+    if wi >20:
+        wi = 20
+    if wi <-20:
+        wi = -20
 
 
-    alpha = (-pi/2) - yaw
-    wi = 70*alpha
+
+
+    WR =   vi/r +L/r * wi
+    WL =   2* vi/r - WR
+
+    if WR > 0:
+        WR = - WR + 1480
+    elif WR <0:
+        WR = - WR +1520
+    else:
+        WR = 1500
+    if WL > 0:
+        WL = - WL + 1480 - 10
+    elif WL < 0:
+        WL = - WL +1520 +10
+    else:
+        WL = 1500
+
+    if (y>3.3 and vi <0) or (y<-3.3 and vi >0):
+       WL = 1500
+       WR = 1500
+
+#    print(v,vi)
+#    print(lv,d,v,s,states[2], input_acceleration)
+#    print(WR,WL)
+#    print(sqrt((x-lx)*(x-lx) + (y-ly)*(y-ly)) - 0.75)
+    RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
+
+def speedC():
+    global states,vi,wi,yaw,x,v
+
+    kp = 0.3
+    e = states[2] - v
+    vi = vi + kp * e
+
+    if vi >50:
+       vi = 50
+    if vi <-50:
+       vi = -50
+
+    L = 0.33 # length between wheels 33 cm
+    r = 0.065
+
+    kg = 80
+    kh = 50
+    gamma1 = -kg * x;
+    des_ang = -pi/2
+    gamma2 = kh * (des_ang - yaw);
+    if vi >0:
+       wi = gamma1 + gamma2;
+    if vi <0:
+       wi = -gamma1 + gamma2
+
 
     if wi >20:
         wi = 20
@@ -218,14 +275,7 @@ def UpdateAcceleration():
         WL = 1500
 
 
-#    print(v,lx,ly)
-    print(lv,d,v,s,states[2], input_acceleration)
-#    print(WR,WL)
-#    print(sqrt((x-lx)*(x-lx) + (y-ly)*(y-ly)) - 0.75)
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
-
-
-
 
 # Main function
 def main():
@@ -263,6 +313,9 @@ def main():
             if counter%1 ==0:
               controller()
               UpdateAcceleration()
+#              speedC()
+#            else:
+#              speedC()
             rc_pub.publish(RcOver)
             rate.sleep()
 
@@ -271,4 +324,4 @@ if __name__ == '__main__':
     try:
             main()
     except rospy.ROSInterruptException:
-            pass
+            print("NODE KILLED")
