@@ -96,7 +96,7 @@ def lvCb(msg):
 #....................... loading controller matrices ....
 def ControllerMatrices():
     global M, alpha, beta,A,B
-    allmat  = scipy.io.loadmat('../catkin_ws/src/roverpx4/scripts/v10hz.mat')
+    allmat  = scipy.io.loadmat('../catkin_ws/src/roverpx4/scripts/1v10hz.mat')
     M       = allmat.get('M')
     alpha   = allmat.get('alpha')
     beta    = allmat.get('beta')
@@ -213,7 +213,9 @@ def UpdateAcceleration():
     if (y>3.3 and vi <0) or (y<-3.3 and vi >0):
        WL = 1500
        WR = 1500
-
+    if abs(x) >1:
+       WL = 1500
+       WR = 1500
 #    print(v,vi)
 #    print(lv,d,v,s,states[2], input_acceleration)
 #    print(WR,WL)
@@ -223,11 +225,16 @@ def UpdateAcceleration():
 def speedC():
     global states,vi,wi,yaw,x,v,input_acceleration, T0
 
+
+    if abs(vi)<1.66 and (input_acceleration >0):
+       vi = 1.66
+    if abs(vi)<1.66 and (input_acceleration <0):
+       vi = -1.66
+
     kp = 0.1
-    input_acceleration = 0.001
+
     T = time.time() - T0
-    if  T>3:
-        input_acceleration =- 1.001
+
     e = input_acceleration - v
     vi = vi + kp * e
 
@@ -277,8 +284,12 @@ def speedC():
     if (y>3.3 and vi <0) or (y<-3.3 and vi >0):
        WL = 1500
        WR = 1500
-    print(v,T,input_acceleration)
-#    print(lv,d,v,states[2], input_acceleration)
+    if abs(x) >1:
+       WL = 1500
+       WR = 1500
+
+#    print(v,T,input_acceleration)
+    print(lv,d,v,states[2], input_acceleration)
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 # Main function
@@ -317,8 +328,6 @@ def main():
             if counter%1 ==0:
               controller()
               #UpdateAcceleration()
-              speedC()
-          ##  else:
               speedC()
             rc_pub.publish(RcOver)
             rate.sleep()
