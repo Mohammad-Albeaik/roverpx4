@@ -226,10 +226,17 @@ def speedC():
     global states,vi,wi,yaw,x,v,input_acceleration, T0
 
 
-    if abs(vi)<1.66 and (input_acceleration >0):
-       vi = 1.66
-    if abs(vi)<1.66 and (input_acceleration <0):
-       vi = -1.66
+ #   if abs(vi)<1.66 and (input_acceleration >0):
+ #      vi = 1.66
+ #   if abs(vi)<1.66 and (input_acceleration <0):
+ #      vi = -1.66
+
+    if time.time()-T0<10:
+       input_acceleration = 0.3
+    elif time.time()-T0<17:
+       input_acceleration = -0.1
+    else:
+       input_acceleration = 1.5
 
     kp = 0.1
 
@@ -289,7 +296,7 @@ def speedC():
        WR = 1500
 
 #    print(v,T,input_acceleration)
-    print(lv,d,v,states[2], input_acceleration)
+    print(lv,d,v,input_acceleration,states[2])
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 # Main function

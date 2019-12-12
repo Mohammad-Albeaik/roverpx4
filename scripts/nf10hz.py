@@ -121,6 +121,7 @@ def controller():
 #    v = prev_v + vdot * dT
 #    s = v + vdot
     s = (v-0.9048*prev_v)/0.0952
+#    s = states[3]
 #    print(v,states[2])
     states = [lv, d, v, s]
     states = np.array(states).reshape(4,1)
@@ -225,10 +226,13 @@ def UpdateAcceleration():
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 def speedC():
-    global states,vi,wi,yaw,x,v
+    global states,vi,wi,yaw,x,v,lv,d,s
 
-    kp = 0.3
-    e = states[2] - v
+    kp = 0.55
+  #  kp = 0.3
+#    e = states[2] - v
+    e = states[3] - v
+
     vi = vi + kp * e
 
     if vi >50:
@@ -273,8 +277,8 @@ def speedC():
         WL = - WL +1520 +10
     else:
         WL = 1500
-
-
+#    print(v)
+    print(lv,d,v,states[3],s)
     RcOver.channels = [1500, WR,1500, WL,0,0,0,0]   # 4th
 
 # Main function
@@ -287,7 +291,7 @@ def main():
     rospy.init_node('jeffController', anonymous=True)
 
     # ROS loop rate, [Hz]
-    rate = rospy.Rate(30.0)
+    rate = rospy.Rate(10.0)
 
     # Subscribe to leader's local position
     rospy.Subscriber('vrpn_client_node/'+ rospy.get_param('leader') +'/pose', PoseStamped, lposCb) 
@@ -310,12 +314,12 @@ def main():
     # ROS main loop
     while not rospy.is_shutdown():
             counter = counter +1
-            if counter%3 ==0:
+            if counter%1 ==0:
               controller()
               #UpdateAcceleration()
               speedC()
-            else:
-              speedC()
+          #  else:
+          #    speedC()
             rc_pub.publish(RcOver)
             rate.sleep()
 
